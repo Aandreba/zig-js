@@ -1,34 +1,55 @@
 const std = @import("std");
 
 pub const Token = union(enum) {
-    Keyword: Keyword,
-    Punctuation: Punctuation,
-    Ident: []const u8,
+    keyword: Keyword,
+    punctuation: Punctuation,
+    ident: []const u8,
 
     pub fn isKeyword(self: *const Token) bool {
         return switch (self) {
-            .Keyword => true,
+            Token.keyword => true,
+            else => false,
+        };
+    }
+
+    pub fn isThisKeyword(self: *const Token, kw: Token.Keyword) bool {
+        return switch (self.*) {
+            Token.keyword => |this| this == kw,
             else => false,
         };
     }
 
     pub fn isPunctuation(self: *const Token) bool {
         return switch (self) {
-            .Punctuation => true,
+            Token.punctuation => true,
+            else => false,
+        };
+    }
+
+    pub fn isThisPunctuation(self: *const Token, punc: Token.Punctuation) bool {
+        return switch (self.*) {
+            Token.punctuation => |this| this == punc,
             else => false,
         };
     }
 
     pub fn isIdent(self: *const Token) bool {
         return switch (self) {
-            .Ident => true,
+            Token.ident => true,
+            else => false,
+        };
+    }
+
+    pub fn isThisIdent(self: *const Token, ident: []const u8) bool {
+        return switch (self.*) {
+            Token.ident => |this| std.mem.eql(u8, this, ident),
             else => false,
         };
     }
 
     pub fn deinit(self: Token, alloc: std.mem.Allocator) void {
         switch (self) {
-            Token.Ident => |ident| alloc.free(ident),
+            Token.ident => |ident| alloc.free(ident),
             else => {},
         }
     }

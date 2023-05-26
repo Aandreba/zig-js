@@ -27,7 +27,7 @@ pub const Parser = struct {
 
         // Punctuation
         const b = try self.skipWhitespace() orelse return null;
-        if (Token.Punctuation.fromChar(b)) |punc| return Token{ .Punctuation = punc };
+        if (Token.Punctuation.fromChar(b)) |punc| return Token{ .punctuation = punc };
 
         // Skip comments
         if (b == '/') {
@@ -73,46 +73,54 @@ pub const Parser = struct {
         // Keyword
         if (Token.Keyword.fromStr(ident.items)) |kw| {
             ident.deinit();
-            return Token{ .Keyword = kw };
+            return Token{ .keyword = kw };
         }
 
-        return Token{ .Ident = ident.toOwnedSlice() };
+        return Token{ .ident = ident.toOwnedSlice() };
+    }
+
+    pub fn skipToken(self: *Parser, alloc: std.mem.Allocator) !void {
+        const token = try self.nextToken(alloc) orelse return ParseError.UnexpectedEof;
+        token.deinit(alloc);
     }
 
     pub fn peekToken(self: *Parser, alloc: std.mem.Allocator) !?*const Token {
         const next_token = try self.nextToken(alloc);
         self.peek = next_token;
-        return &self.peek;
+        return if (self.peek) |*pk1| if (pk1.* == null) null else @ptrCast(*const Token, pk1) else unreachable;
     }
 
     pub fn nextIdent(self: *Parser, alloc: std.mem.Allocator) ![]const u8 {
         const token = try self.nextToken(alloc) orelse return ParseError.UnexpectedEof;
         return switch (token) {
-            .Ident => |ident| ident,
+            .ident => |ident| ident,
             else => return ParseError.UnexpectedToken,
         };
     }
 
     pub fn parseKeyword(self: *Parser, alloc: std.mem.Allocator, kw: Token.Keyword) !Token.Keyword {
         const token = try self.nextToken(alloc) orelse return ParseError.UnexpectedEof;
-        defer token.deinit();
+        defer token.deinit(alloc);
+
         return switch (token) {
-            .Keyword => |tg| if (kw == tg) kw else ParseError.UnexpectedToken,
+            .keyword => |tg| if (kw == tg) kw else ParseError.UnexpectedToken,
             else => return ParseError.UnexpectedToken,
         };
     }
 
     pub fn parsePunctuation(self: *Parser, alloc: std.mem.Allocator, punc: Token.Punctuation) !Token.Punctuation {
         const token = try self.nextToken(alloc) orelse return ParseError.UnexpectedEof;
-        defer token.deinit();
+        defer token.deinit(alloc);
+
         return switch (token) {
-            .Punctuation => |tg| if (punc == tg) punc else ParseError.UnexpectedToken,
+            .punctuation => |tg| if (punc == tg) punc else ParseError.UnexpectedToken,
             else => return ParseError.UnexpectedToken,
         };
     }
 
-    pub fn deinit(self: Parser) void {
+    pub fn deinit(self: Parser, alloc: std.mem.Allocator) void {
         self.file.close();
+        if (self.peek) |peek1| if (peek1) |peek2| peek2.deinit(alloc);
     }
 
     fn skipWhitespace(self: *Parser) !?u8 {
