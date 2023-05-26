@@ -1,4 +1,5 @@
 const std = @import("std");
+const pkgs = @import("deps.zig").pkgs;
 
 pub fn build(b: *std.build.Builder) void {
     // Standard release options allow the person running `zig build` to select
@@ -7,6 +8,7 @@ pub fn build(b: *std.build.Builder) void {
 
     const lib = b.addStaticLibrary("zig-js", "src/main.zig");
     lib.setBuildMode(mode);
+    pkgs.addAllTo(lib);
     lib.install();
 
     const main_tests = b.addTest("src/main.zig");

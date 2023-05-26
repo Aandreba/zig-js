@@ -1,6 +1,7 @@
 const std = @import("std");
 const JsString = @import("string.zig").JsString;
 
+/// Representation of an object owned by JS.
 pub const JsValue = struct {
     idx: u32,
 
@@ -13,14 +14,26 @@ pub const JsValue = struct {
         return JsValue{ .idx = idx };
     }
 
+    /// Creates a new JS value which is a string.
+    ///
+    /// The utf-8 string provided is copied to the JS heap and the string will
+    /// be owned by the JS garbage collector.
     pub fn initString(str: []const u8) JsValue {
         return JsValue.init(js_string_new(@ptrCast(*const u8, str.ptr), str.len));
     }
 
+    /// Creates a new JS value which is a number.
+    ///
+    /// This function creates a JS value representing a number (a heap
+    /// allocated number) and returns a handle to the JS version of it.
     pub fn initNumber(num: f64) JsValue {
         return JsValue.init(js_number_new(num));
     }
 
+    /// Creates a new JS value which is a boolean.
+    ///
+    /// This function creates a JS object representing a boolean (a heap
+    /// allocated boolean) and returns a handle to the JS version of it.
     pub fn initBoolean(val: bool) JsValue {
         if (val) {
             return JsValue.TRUE;

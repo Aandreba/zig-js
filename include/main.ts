@@ -1,49 +1,4 @@
-export function testing() {
-    return (global.instance.exports.testing as Function)()
-}
-
-export async function load(url: string) {
-    const env = {
-        js_value_free, js_string_new, js_number_new,
-        js_value_is_string, js_value_is_number, js_value_is_boolean,
-        js_value_as_number, js_console_log, js_console_log_string,
-        js_string_len, js_string_to_zig_string,
-        js_eval, create_object_url
-    }
-
-    if ("instantiateStreaming" in WebAssembly) {
-        const wasm = await WebAssembly.instantiateStreaming(fetch(url), {
-            env,
-        });
-
-        const mem = wasm.instance.exports.memory as WebAssembly.Memory;
-        global = {
-            instance: wasm.instance,
-            module: wasm.module,
-            memory: mem,
-            entries: [
-                { value: undefined, next: undefined },
-                { value: null, next: undefined },
-                { value: true, next: undefined },
-                { value: false, next: undefined }
-            ],
-        };
-    } else {
-        console.warn("streaming is not available");
-        // todo
-    }
-}
-
-const TEXT_DECODER = new TextDecoder("utf-8", { ignoreBOM: true, fatal: true });
-const TEXT_ENCODER = new TextEncoder();
-
-var global: {
-    instance: WebAssembly.Instance,
-    module: WebAssembly.Module,
-    memory: WebAssembly.Memory,
-    entries: { value?: unknown, next?: number }[],
-    next_entry?: number
-};
+import { decode_zig_string, global, js_alloc_value } from "./globals.ts";
 
 /* EXPORTS */
 function js_value_free(idx: number) {
@@ -106,39 +61,5 @@ function js_value_is_boolean (idx: number): number {
         return 1
     } else {
         return 0
-    }
-}
-
-function js_string_len (idx: number): number {
-    return (global.entries[idx].value as string).length
-}
-
-function js_string_to_zig_string (idx: number, ptr: number, len: number): number {
-    const res = TEXT_ENCODER.encodeInto(global.entries[idx].value as string, new Uint8Array(global.memory.buffer).subarray(ptr, ptr + len));
-    return res.written ?? len
-}
-
-function create_object_url(ptr: number, len: number): number {
-    const str = decode_zig_string(ptr, len);
-    const blob = new Blob([str]);
-    return js_alloc_value(URL.createObjectURL(blob.slice(0, blob.size, "text/javascript")));
-}
-
-
-/* UTILS */
-function decode_zig_string (ptr: number, len: number): string {
-    const slice = new Uint8Array(global.memory.buffer).subarray(ptr, ptr + len);
-    return TEXT_DECODER.decode(slice);
-}
-
-function js_alloc_value(val: unknown): number {
-    const entry = { value: val, next: undefined };
-    if (global.next_entry === undefined) {
-        return global.entries.push(entry) - 1;
-    } else {
-        const tmp = global.next_entry;
-        global.next_entry = global.entries[tmp].next;
-        global.entries[tmp] = entry;
-        return tmp
     }
 }

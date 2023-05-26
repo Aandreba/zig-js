@@ -2,9 +2,6 @@ const std = @import("std");
 const js = @import("js.zig");
 const JsValue = js.JsValue;
 
-extern fn js_string_len(idx: u32) u32;
-extern fn js_string_to_zig_string(idx: u32, ptr: *u8, len: usize) u32;
-
 pub const JsString = struct {
     value: JsValue,
 
@@ -14,6 +11,7 @@ pub const JsString = struct {
         };
     }
 
+    /// Returns the length of the string in UTF-16 char points.
     pub fn len(self: *const JsString) u32 {
         return js_string_len(self.value.idx);
     }
@@ -42,3 +40,6 @@ pub const JsString = struct {
         self.value.deinint();
     }
 };
+
+extern fn js_string_len(idx: u32) u32;
+extern fn js_string_to_zig_string(idx: u32, ptr: *u8, len: usize) u32;
