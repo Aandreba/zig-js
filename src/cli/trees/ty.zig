@@ -13,9 +13,12 @@ pub const Type = union(enum) {
     number,
     boolean,
     bigint,
+    null,
+    undefined,
     array: *Type,
     tuple: []Type,
     ident: []const u8,
+    sum: []Type,
 
     pub fn parse(alloc: std.mem.Allocator, p: *Parser) !Type {
         const token = try p.nextToken(alloc) orelse return ParserError.UnexpectedEof;
@@ -30,6 +33,8 @@ pub const Type = union(enum) {
                 Token.Keyword.String => return Type.string,
                 Token.Keyword.Number => return Type.number,
                 Token.Keyword.Boolean => return Type.boolean,
+                Token.Keyword.Null => return Type.null,
+                Token.Keyword.Undefined => return Type.undefined,
                 else => return ParserError.UnexpectedToken,
             },
             Token.punctuation => |punc| switch (punc) {
@@ -71,7 +76,7 @@ pub const Type = union(enum) {
                 ty.*.deinit(alloc);
                 alloc.destroy(ty);
             },
-            Type.tuple => |types| {
+            Type.tuple, Type.sum => |types| {
                 for (types) |ty| ty.deinit(alloc);
                 alloc.free(types);
             },

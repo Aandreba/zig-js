@@ -73,6 +73,8 @@ pub const Token = union(enum) {
         Number,
         Boolean,
         Bigint,
+        Null,
+        Undefined,
 
         const MAP = std.ComptimeStringMap(Keyword, .{
             .{ "let", .Let },
@@ -93,6 +95,8 @@ pub const Token = union(enum) {
             .{ "number", .Number },
             .{ "boolean", .Boolean },
             .{ "bigint", .Bigint },
+            .{ "null", .Null },
+            .{ "undefined", .Undefined },
         });
 
         pub fn fromStr(str: []const u8) ?Keyword {

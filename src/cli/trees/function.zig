@@ -9,7 +9,7 @@ const ParserError = parser.ParseError;
 pub const Function = struct {
     ident: []const u8,
     args: []FunctionArgument,
-    // TODO return type
+    ret: ?Type,
 
     pub fn parse(alloc: std.mem.Allocator, p: *Parser) !Function {
         _ = try p.parseKeyword(alloc, Token.Keyword.Function);
@@ -32,9 +32,19 @@ pub const Function = struct {
         }
         try p.skipToken(alloc);
 
+        // Return type
+        var ret: ?Type = null;
+        if (try p.peekToken(alloc)) |token| {
+            if (Token.isThisPunctuation(token, Token.Punctuation.Colon)) {
+                try p.skipToken(alloc);
+                ret = try Type.parse(alloc, p);
+            }
+        }
+
         return Function{
             .ident = ident,
             .args = args.toOwnedSlice(),
+            .ret = ret,
         };
     }
 
@@ -51,6 +61,7 @@ pub const Function = struct {
     pub fn deinit(self: Function, alloc: std.mem.Allocator) void {
         alloc.free(self.ident);
         for (self.args) |arg| arg.deinit(alloc);
+        if (self.ret) |ret| ret.deinit(alloc);
         alloc.free(self.args);
     }
 };

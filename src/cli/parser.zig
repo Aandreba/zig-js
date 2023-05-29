@@ -85,9 +85,21 @@ pub const Parser = struct {
     }
 
     pub fn peekToken(self: *Parser, alloc: std.mem.Allocator) !?*const Token {
-        const next_token = try self.nextToken(alloc);
-        self.peek = next_token;
+        if (self.peek == null) {
+            const next_token = try self.nextToken(alloc);
+            self.peek = next_token;
+        }
         return if (self.peek) |*pk1| if (pk1.* == null) null else @ptrCast(*const Token, pk1) else unreachable;
+    }
+
+    pub fn peekKeyword(self: *Parser, alloc: std.mem.Allocator, kw: Token.Keyword) !bool {
+        const maybe_token = try self.peekToken(alloc);
+        return if (maybe_token) |token| token.isThisKeyword(kw) else false;
+    }
+
+    pub fn peekPunctuation(self: *Parser, alloc: std.mem.Allocator, punc: Token.Punctuation) !bool {
+        const maybe_token = try self.peekToken(alloc);
+        return if (maybe_token) |token| token.isThisPunctuation(punc) else false;
     }
 
     pub fn nextIdent(self: *Parser, alloc: std.mem.Allocator) ![]const u8 {
